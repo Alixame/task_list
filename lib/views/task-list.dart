@@ -1,5 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:task_lisst/models/Task.dart';
+import 'package:intl/intl.dart';
 
 class TaskListPage extends StatefulWidget {
   @override
@@ -7,13 +10,16 @@ class TaskListPage extends StatefulWidget {
 }
 
 class _TaskListPageState extends State<TaskListPage> {
-  List<Task> tasks = [Task('Tarefa 1', 'Alta'), Task('Tarefa 2', 'Baixa')];
+  FirebaseFirestore firestore = FirebaseFirestore.instance;
 
   void handleViewCreate(context) {
     Navigator.pushNamed(context, '/task-create').then((task) {
       if (task is Task) {
-        setState(() {
-          tasks.add(task);
+        firestore.collection('tasks').add({
+          'name': task.name,
+          'priority': task.priority,
+          'date': task.date,
+          'finished': task.finished
         });
       }
     });
@@ -27,16 +33,45 @@ class _TaskListPageState extends State<TaskListPage> {
         ),
         body: Container(
           padding: const EdgeInsets.all(20),
-          child: ListView.builder(
-            itemCount: tasks.length,
-            itemBuilder: (context, index) {
-              return Card(
-                child: ListTile(
-                  title: Text(tasks[index].title),
-                  subtitle: Text(tasks[index].priorit),
-                ),
+          child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+            stream: firestore.collection('tasks').snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const Center(
+                  child: CircularProgressIndicator()
+                );
+              }
+
+              var tasks = snapshot.data!.docs;
+              
+              return ListView(
+                children: tasks.map((task) {
+                  var data = task.data();
+                  var taskModel = Task(
+                    data['name'],
+                    data['priority'],
+                    data['date'].toDate(),
+                    data['finished']
+                  );
+
+                  return Card(
+                    child: ListTile(
+                      title: Text(taskModel.name),
+                      subtitle: Text(taskModel.priority),
+                      trailing: Text(DateFormat('dd/MM/yyyy').format(taskModel.date)),
+                      leading: Checkbox(
+                        value: taskModel.finished,
+                        onChanged: (value) {
+                          firestore.collection('tasks').doc(task.id).update({
+                            'finished': value
+                          });
+                        },
+                      ),
+                    ),
+                  );
+                }).toList(),
               );
-            },
+            }
           ),
         ),
         floatingActionButton: FloatingActionButton(

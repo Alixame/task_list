@@ -1,18 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:task_lisst/models/Task.dart';
+import 'package:intl/intl.dart';
 
-class TaskCreatePage extends StatelessWidget {
-  var formKey = GlobalKey<FormState>();
+class TaskCreatePage extends StatefulWidget {
+  @override
+  _TaskCreatePageState createState() => _TaskCreatePageState();
+}
 
-  String formTitle = '';
-  String formPriorit = '';
-  
+class _TaskCreatePageState extends State<TaskCreatePage> {
+  final formKey = GlobalKey<FormState>();
+
+  String formName = '';
+  String formPriority = '';
+  DateTime formDate = DateTime.now();
+
   saveTask(context) {
-
-    if(formKey.currentState!.validate()) {
+    if (formKey.currentState!.validate()) {
       formKey.currentState!.save();
 
-      Navigator.pop(context, Task(formTitle, formPriorit));
+      Navigator.pop(context, Task(formName, formPriority, formDate, false));
     }
   }
 
@@ -35,10 +41,9 @@ class TaskCreatePage extends StatelessWidget {
                 decoration: const InputDecoration(
                   labelText: 'Título',
                 ),
-                onSaved: (value) =>  {
-                  formTitle = value!
-                },
-                validator: (value) => value!.isEmpty ? 'Título é obrigatório' : null
+                onSaved: (value) => formName = value!,
+                validator: (value) =>
+                    value!.isEmpty ? 'Título é obrigatório' : null,
               ),
               DropdownButtonFormField(
                 items: [
@@ -55,21 +60,41 @@ class TaskCreatePage extends StatelessWidget {
                     value: 'Alta',
                   ),
                 ],
-                onChanged: (value) => {
-                  formPriorit = value.toString()
-                },
+                onChanged: (value) => formPriority = value.toString(),
                 decoration: const InputDecoration(
                   labelText: 'Prioridade',
                 ),
-                validator: (value) => value == null ? 'Prioridade é obrigatorio' : null,
+                validator: (value) =>
+                    value == null ? 'Prioridade é obrigatório' : null,
               ),
+              ListTile(
+                leading: const Icon(Icons.calendar_today),
+                title: const Text('Data de Vencimento'),
+                subtitle: Text(
+                  'Data selecionada: ${DateFormat('dd/MM/yyyy').format(formDate)}',
+                ),
+                onTap: () async {
+                  final selectedDate = await showDatePicker(
+                    context: context,
+                    initialDate: formDate,
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                  );
+                  if (selectedDate != null) {
+                    setState(() {
+                      formDate = selectedDate;
+                    });
+                  }
+                },
+              ),
+              const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () => saveTask(context),
                 child: const Text('Salvar'),
-              )
+              ),
             ],
           ),
-        ), 
+        ),
       ),
     );
   }

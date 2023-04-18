@@ -1,6 +1,8 @@
 class Task {
-  String title;
-  String priorit;
+  String name;
+  String priority;
+  DateTime date;
+  bool finished;
 
-  Task(this.title, this.priorit);
+  Task(this.name, this.priority, this.date, this.finished);
 }
